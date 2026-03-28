@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Webhook Relay 管理台</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    .header {
+      background: #2563eb;
+      color: white;
+      padding: 20px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .tabs {
+      display: flex;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .tab {
+      padding: 15px 25px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      color: #6b7280;
+      font-weight: 500;
+    }
+    .tab.active {
+      border-bottom-color: #2563eb;
+      color: #2563eb;
+    }
+    .tab-content {
+      padding: 20px;
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: #2563eb;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #1d4ed8;
+    }
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .table th, .table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .table th {
+      background: #f9fafb;
+      font-weight: 600;
+      color: #374151;
+    }
+    .table tr:hover {
+      background: #f9fafb;
+    }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .badge-success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge-warning {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    .badge-danger {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .badge-info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+    }
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      width: 500px;
+      max-width: 90%;
+    }
+    .modal-header {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      color: #374151;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .btn-secondary {
+      background: #6b7280;
+      color: white;
+    }
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+    .payload-preview {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: monospace;
+      font-size: 12px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      Webhook Relay 管理台
+    </div>
+    
+    <div class="tabs">
+      <div class="tab active" data-tab="sources">Sources</div>
+      <div class="tab" data-tab="deliveries">Deliveries</div>
+      <div class="tab" data-tab="deadletters">Dead Letters</div>
+    </div>
+
+    <div id="sources" class="tab-content active">
+      <div class="toolbar">
+        <h3>Source 配置列表</h3>
+        <button class="btn btn-primary" onclick="openAddSourceModal()">添加 Source</button>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Source Key</th>
+            <th>Target URL</th>
+            <th>Secret</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="sources-table">
+        </tbody>
+      </table>
+    </div>
+
+    <div id="deliveries" class="tab-content">
+      <div class="toolbar">
+        <h3>投递记录 (最近100条)</h3>
+        <button class="btn btn-primary" onclick="loadDeliveries()">刷新</button>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Source</th>
+            <th>Event ID</th>
+            <th>状态</th>
+            <th>尝试次数</th>
+            <th>Payload</th>
+            <th>创建时间</th>
+          </tr>
+        </thead>
+        <tbody id="deliveries-table">
+        </tbody>
+      </table>
+    </div>
+
+    <div id="deadletters" class="tab-content">
+      <div class="toolbar">
+        <h3>死信队列</h3>
+        <button class="btn btn-primary" onclick="loadDeadLetters()">刷新</button>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Source</th>
+            <th>Event ID</th>
+            <th>错误信息</th>
+            <th>Payload</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="deadletters-table">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="source-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header" id="modal-title">添加 Source</div>
+      <form id="source-form">
+        <input type="hidden" id="source-id">
+        <div class="form-group">
+          <label>Source Key</label>
+          <input type="text" id="source-key" required placeholder="例如: github, stripe">
+        </div>
+        <div class="form-group">
+          <label>Target URL</label>
+          <input type="url" id="target-url" required placeholder="https://example.com/webhook">
+        </div>
+        <div class="form-group">
+          <label>Secret</label>
+          <input type="text" id="secret" required placeholder="HMAC 验证密钥">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeSourceModal()">取消</button>
+          <button type="submit" class="btn btn-primary">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let editingId = null;
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+        
+        if (tab.dataset.tab === 'deliveries') loadDeliveries();
+        if (tab.dataset.tab === 'deadletters') loadDeadLetters();
+      });
+    });
+
+    async function loadSources() {
+      const res = await fetch('/api/sources');
+      const sources = await res.json();
+      const tbody = document.getElementById('sources-table');
+      
+      if (sources.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty-state">暂无 Source 配置</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = sources.map(s => `
+        <tr>
+          <td><code>${s.sourceKey}</code></td>
+          <td>${s.targetUrl}</td>
+          <td><code>${s.secret.substring(0, 10)}...</code></td>
+          <td>${new Date(s.createdAt).toLocaleString('zh-CN')}</td>
+          <td>
+            <button class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;" onclick="editSource(${s.id})">编辑</button>
+            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 12px;" onclick="deleteSource(${s.id})">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function loadDeliveries() {
+      const res = await fetch('/api/deliveries');
+      const deliveries = await res.json();
+      const tbody = document.getElementById('deliveries-table');
+      
+      if (deliveries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无投递记录</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = deliveries.map(d => {
+        let badgeClass = 'badge-info';
+        if (d.status === 'success') badgeClass = 'badge-success';
+        if (d.status === 'failed') badgeClass = 'badge-danger';
+        if (d.status === 'pending' && d.attempts > 0) badgeClass = 'badge-warning';
+        
+        return `
+        <tr>
+          <td>${d.id}</td>
+          <td><code>${d.sourceKey}</code></td>
+          <td><code>${d.eventId}</code></td>
+          <td><span class="badge ${badgeClass}">${d.status}</span></td>
+          <td>${d.attempts}/${d.maxAttempts}</td>
+          <td><div class="payload-preview">${d.payload}</div></td>
+          <td>${new Date(d.createdAt).toLocaleString('zh-CN')}</td>
+        </tr>
+      `}).join('');
+    }
+
+    async function loadDeadLetters() {
+      const res = await fetch('/api/deadletters');
+      const deadLetters = await res.json();
+      const tbody = document.getElementById('deadletters-table');
+      
+      if (deadLetters.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">暂无死信</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = deadLetters.map(d => `
+        <tr>
+          <td>${d.id}</td>
+          <td><code>${d.sourceKey}</code></td>
+          <td><code>${d.eventId}</code></td>
+          <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${d.error}</td>
+          <td><div class="payload-preview">${d.payload}</div></td>
+          <td>${new Date(d.createdAt).toLocaleString('zh-CN')}</td>
+          <td>
+            <button class="btn btn-success" style="padding: 4px 8px; font-size: 12px;" onclick="replayDeadLetter(${d.id})">重放</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function openAddSourceModal() {
+      editingId = null;
+      document.getElementById('modal-title').textContent = '添加 Source';
+      document.getElementById('source-form').reset();
+      document.getElementById('source-key').disabled = false;
+      document.getElementById('source-modal').classList.add('active');
+    }
+
+    function closeSourceModal() {
+      document.getElementById('source-modal').classList.remove('active');
+      editingId = null;
+    }
+
+    async function editSource(id) {
+      const res = await fetch('/api/sources');
+      const sources = await res.json();
+      const source = sources.find(s => s.id === id);
+      
+      if (source) {
+        editingId = id;
+        document.getElementById('modal-title').textContent = '编辑 Source';
+        document.getElementById('source-id').value = id;
+        document.getElementById('source-key').value = source.sourceKey;
+        document.getElementById('source-key').disabled = true;
+        document.getElementById('target-url').value = source.targetUrl;
+        document.getElementById('secret').value = source.secret;
+        document.getElementById('source-modal').classList.add('active');
+      }
+    }
+
+    async function deleteSource(id) {
+      if (confirm('确定要删除这个 Source 吗？')) {
+        await fetch(`/api/sources/${id}`, { method: 'DELETE' });
+        loadSources();
+      }
+    }
+
+    async function replayDeadLetter(id) {
+      if (confirm('确定要重放这个死信吗？')) {
+        await fetch(`/api/deadletters/${id}/replay`, { method: 'POST' });
+        loadDeadLetters();
+        loadDeliveries();
+      }
+    }
+
+    document.getElementById('source-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const data = {
+        sourceKey: document.getElementById('source-key').value,
+        targetUrl: document.getElementById('target-url').value,
+        secret: document.getElementById('secret').value
+      };
+      
+      if (editingId) {
+        await fetch(`/api/sources/${editingId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        await fetch('/api/sources', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+      
+      closeSourceModal();
+      loadSources();
+    });
+
+    loadSources();
+  </script>
+</body>
+</html>

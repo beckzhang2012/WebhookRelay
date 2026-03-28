@@ -1,0 +1,11 @@
+﻿node_modules/
+data/
+*.db
+*.sqlite
+*.sqlite3
+.env
+npm-debug.log*
+35-cotv21-pro/
+35-cotv21.2-pro/
+docs/
+docs/_extracted/

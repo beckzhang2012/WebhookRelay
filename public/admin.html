@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webhook Relay 管理台</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            background: white;
+            border: none;
+            border-radius: 8px 8px 0 0;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+        
+        .tab:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 0 8px 8px 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            margin-bottom: 20px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        input[type="text"],
+        input[type="url"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        input[type="text"]:focus,
+        input[type="url"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-pending {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-deadletter {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .error-message {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .close {
+            font-size: 28px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 2000;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .toast.success {
+            background-color: #28a745;
+        }
+        
+        .toast.error {
+            background-color: #dc3545;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔄 Webhook Relay</h1>
+            <p class="subtitle">可靠的 Webhook 转发系统 - 管理控制台</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="sources">📌 Source 配置</button>
+            <button class="tab" data-tab="deliveries">📦 投递记录</button>
+            <button class="tab" data-tab="deadletters">⚠️ 死信队列</button>
+        </div>
+        
+        <!-- Source 配置 Tab -->
+        <div id="sources" class="tab-content active">
+            <div class="section">
+                <h2>添加新 Source</h2>
+                <form id="sourceForm">
+                    <div class="form-group">
+                        <label for="sourceKey">Source Key (唯一标识)</label>
+                        <input type="text" id="sourceKey" required placeholder="例如: github, stripe, custom">
+                    </div>
+                    <div class="form-group">
+                        <label for="secret">Secret (用于签名验证)</label>
+                        <input type="text" id="secret" required placeholder="建议使用随机字符串">
+                    </div>
+                    <div class="form-group">
+                        <label for="targetUrl">Target URL (转发目标)</label>
+                        <input type="url" id="targetUrl" required placeholder="https://your-target-url.com/webhook">
+                    </div>
+                    <button type="submit" class="btn btn-primary">添加 Source</button>
+                </form>
+            </div>
+            
+            <div class="section">
+                <h2>已配置的 Sources</h2>
+                <div id="sourcesList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 投递记录 Tab -->
+        <div id="deliveries" class="tab-content">
+            <div class="section">
+                <h2>最近 50 条投递记录</h2>
+                <div id="deliveriesList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 死信队列 Tab -->
+        <div id="deadletters" class="tab-content">
+            <div class="section">
+                <h2>死信队列 (超过重试次数的投递)</h2>
+                <div id="deadlettersList">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 编辑 Source 模态框 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑 Source</h3>
+                <span class="close" onclick="closeModal('editModal')">&times;</span>
+            </div>
+            <form id="editSourceForm">
+                <input type="hidden" id="editId">
+                <div class="form-group">
+                    <label for="editSourceKey">Source Key</label>
+                    <input type="text" id="editSourceKey" required>
+                </div>
+                <div class="form-group">
+                    <label for="editSecret">Secret</label>
+                    <input type="text" id="editSecret" required>
+                </div>
+                <div class="form-group">
+                    <label for="editTargetUrl">Target URL</label>
+                    <input type="url" id="editTargetUrl" required>
+                </div>
+                <button type="submit" class="btn btn-primary">保存修改</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">取消</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Toast 通知 -->
+    <div id="toast" class="toast"></div>
+    
+    <script>
+        // 标签页切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+                
+                // 加载对应数据
+                if (tab.dataset.tab === 'sources') loadSources();
+                if (tab.dataset.tab === 'deliveries') loadDeliveries();
+                if (tab.dataset.tab === 'deadletters') loadDeadletters();
+            });
+        });
+        
+        // 显示 Toast 通知
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+        
+        // 模态框控制
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'block';
+        }
+        
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        
+        // 加载 Sources
+        async function loadSources() {
+            try {
+                const response = await fetch('/api/sources');
+                const sources = await response.json();
+                
+                const list = document.getElementById('sourcesList');
+                
+                if (sources.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <h3>暂无配置的 Source</h3>
+                            <p>添加一个新的 Source 开始接收 Webhook</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Source Key</th>
+                                <th>Secret</th>
+                                <th>Target URL</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${sources.map(source => `
+                                <tr>
+                                    <td>${source.id}</td>
+                                    <td><code>${source.sourceKey}</code></td>
+                                    <td><code>${source.secret.substring(0, 10)}...</code></td>
+                                    <td>${source.targetUrl}</td>
+                                    <td>${new Date(source.createdAt).toLocaleString()}</td>
+                                    <td class="action-buttons">
+                                        <button class="btn btn-secondary btn-sm" onclick="editSource(${source.id})">编辑</button>
+                                        <button class="btn btn-danger btn-sm" onclick="deleteSource(${source.id})">删除</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                showToast('加载 Sources 失败', 'error');
+            }
+        }
+        
+        // 添加 Source
+        document.getElementById('sourceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const sourceKey = document.getElementById('sourceKey').value;
+            const secret = document.getElementById('secret').value;
+            const targetUrl = document.getElementById('targetUrl').value;
+            
+            try {
+                const response = await fetch('/api/sources', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourceKey, secret, targetUrl })
+                });
+                
+                if (response.ok) {
+                    showToast('Source 添加成功！');
+                    document.getElementById('sourceForm').reset();
+                    loadSources();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error.message, 'error');
+                }
+            } catch (error) {
+                showToast('添加 Source 失败', 'error');
+            }
+        });
+        
+        // 编辑 Source
+        async function editSource(id) {
+            try {
+                const response = await fetch(`/api/sources`);
+                const sources = await response.json();
+                const source = sources.find(s => s.id === id);
+                
+                if (source) {
+                    document.getElementById('editId').value = source.id;
+                    document.getElementById('editSourceKey').value = source.sourceKey;
+                    document.getElementById('editSecret').value = source.secret;
+                    document.getElementById('editTargetUrl').value = source.targetUrl;
+                    openModal('editModal');
+                }
+            } catch (error) {
+                showToast('加载 Source 信息失败', 'error');
+            }
+        }
+        
+        // 保存编辑
+        document.getElementById('editSourceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const id = document.getElementById('editId').value;
+            const sourceKey = document.getElementById('editSourceKey').value;
+            const secret = document.getElementById('editSecret').value;
+            const targetUrl = document.getElementById('editTargetUrl').value;
+            
+            try {
+                const response = await fetch(`/api/sources/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sourceKey, secret, targetUrl })
+                });
+                
+                if (response.ok) {
+                    showToast('Source 更新成功！');
+                    closeModal('editModal');
+                    loadSources();
+                } else {
+                    const data = await response.json();
+                    showToast(data.error.message, 'error');
+                }
+            } catch (error) {
+                showToast('更新 Source 失败', 'error');
+            }
+        });
+        
+        // 删除 Source
+        async function deleteSource(id) {
+            if (confirm('确定要删除这个 Source 吗？')) {
+                try {
+                    const response = await fetch(`/api/sources/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                        showToast('Source 删除成功！');
+                        loadSources();
+                    } else {
+                        showToast('删除 Source 失败', 'error');
+                    }
+                } catch (error) {
+                    showToast('删除 Source 失败', 'error');
+                }
+            }
+        }
+        
+        // 加载投递记录
+        async function loadDeliveries() {
+            try {
+                const response = await fetch('/api/deliveries');
+                const deliveries = await response.json();
+                
+                const list = document.getElementById('deliveriesList');
+                
+                if (deliveries.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <h3>暂无投递记录</h3>
+                            <p>发送一个 Webhook 到 /ingest/:source 开始测试</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Source</th>
+                                <th>Event ID</th>
+                                <th>状态</th>
+                                <th>尝试次数</th>
+                                <th>最后错误</th>
+                                <th>创建时间</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${deliveries.map(delivery => `
+                                <tr>
+                                    <td>${delivery.id}</td>
+                                    <td>${delivery.source}</td>
+                                    <td><code>${delivery.eventId}</code></td>
+                                    <td><span class="status status-${delivery.status}">${delivery.status}</span></td>
+                                    <td>${delivery.attempts}/${delivery.maxAttempts}</td>
+                                    <td>
+                                        ${delivery.lastError 
+                                            ? `<span class="error-message" title="${delivery.lastError}">${delivery.lastError}</span>`
+                                            : '-'
+                                        }
+                                    </td>
+                                    <td>${new Date(delivery.createdAt).toLocaleString()}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                showToast('加载投递记录失败', 'error');
+            }
+        }
+        
+        // 加载死信队列
+        async function loadDeadletters() {
+            try {
+                const response = await fetch('/api/deadletters');
+                const deadletters = await response.json();
+                
+                const list = document.getElementById('deadlettersList');
+                
+                if (deadletters.length === 0) {
+                    list.innerHTML = `
+                        <div class="empty-state">
+                            <h3>死信队列为空</h3>
+                            <p>所有投递都成功或正在重试中</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                list.innerHTML = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Source</th>
+                                <th>Event ID</th>
+                                <th>最后错误</th>
+                                <th>创建时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${deadletters.map(dl => `
+                                <tr>
+                                    <td>${dl.id}</td>
+                                    <td>${dl.source}</td>
+                                    <td><code>${dl.eventId}</code></td>
+                                    <td>
+                                        <span class="error-message" title="${dl.lastError}">${dl.lastError}</span>
+                                    </td>
+                                    <td>${new Date(dl.createdAt).toLocaleString()}</td>
+                                    <td>
+                                        <button class="btn btn-success btn-sm" onclick="replayDeadletter(${dl.id})">重新投递</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (error) {
+                showToast('加载死信队列失败', 'error');
+            }
+        }
+        
+        // 重送死信
+        async function replayDeadletter(id) {
+            if (confirm('确定要重新投递这条死信吗？')) {
+                try {
+                    const response = await fetch(`/api/deadletters/${id}/replay`, {
+                        method: 'POST'
+                    });
+                    
+                    if (response.ok) {
+                        showToast('重新投递成功！');
+                        loadDeadletters();
+                        loadDeliveries();
+                    } else {
+                        showToast('重新投递失败', 'error');
+                    }
+                } catch (error) {
+                    showToast('重新投递失败', 'error');
+                }
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSources();
+        });
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>
